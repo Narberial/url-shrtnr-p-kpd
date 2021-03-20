@@ -1,10 +1,10 @@
 package edu.kpi.testcourse.logic;
 
-import edu.kpi.testcourse.entities.UrlAlias;
 import edu.kpi.testcourse.entities.User;
 import edu.kpi.testcourse.storage.UrlRepository.AliasAlreadyExist;
 import edu.kpi.testcourse.storage.UrlRepositoryFakeImpl;
 import edu.kpi.testcourse.storage.UserRepositoryFakeImpl;
+import java.security.cert.TrustAnchor;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -87,9 +87,7 @@ class LogicTest {
     var shortUrl = logic.createNewAlias("aaa@bbb.com", "http://g.com/loooong_url", "short");
 
     // THEN
-    assertThatThrownBy(() -> {
-      logic.createNewAlias("ddd@bbb.com", "http://d.com/laaaang_url", "short");
-    }).isInstanceOf(AliasAlreadyExist.class);
+    assertThatThrownBy(() -> logic.createNewAlias("ddd@bbb.com", "http://d.com/laaaang_url", "short")).isInstanceOf(AliasAlreadyExist.class);
   }
 
   @Test
@@ -102,6 +100,33 @@ class LogicTest {
 
     // THEN
     assertThat(generatedAlias).isNotEmpty();
+  }
+
+  @Test
+  void shouldSaveLinkAccordingToUser() {
+    // GIVEN
+    Logic logic = createLogic();
+    var user1_alias1 = logic.createNewAlias("aaa@bbb.com", "http://g.com/loooong_url", "user1_1");
+    var user1_alias2 = logic.createNewAlias("aaa@bbb.com", "http://g.com/loooong_url", "user1_2");
+    var user2_alias1 = logic.createNewAlias("zzz@yyy.com", "http://h.com/shooort_url", "user2_1");
+    // WHEN
+    logic.dataCreation();
+    // THEN
+    assertThat(logic.data.get("aaa@bbb.com").size()).isEqualTo(2);
+    assertThat(logic.data.get("zzz@yyy.com").size()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotDeleteAnotherUserAlias() {
+    // GIVEN
+    Logic logic = createLogic();
+    var user1_alias1 = logic.createNewAlias("aaa@bbb.com", "https://www.youtube.com/watch?v=aLHY2XgUs7U", "ferrari");
+    var user2_alias1 = logic.createNewAlias("zzz@yyy.com", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "Rick");
+    // WHEN
+    logic.dataCreation();
+    logic.deleteFunc("aaa@bbb.com", "ferrari");
+    // THEN
+    assertThat(logic.data.get("aaa@bbb.com").isEmpty()).isTrue();
   }
 
 }
