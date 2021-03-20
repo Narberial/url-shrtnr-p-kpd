@@ -18,6 +18,8 @@ import io.micronaut.http.server.util.HttpHostResolver;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import java.security.Principal;
+import java.util.List;
+import java.util.Map;
 import javax.inject.Inject;
 
 /**
@@ -57,17 +59,19 @@ public class AuthenticatedApiController {
       @Body UrlShortenRequest request,
       Principal principal,
       HttpRequest<?> httpRequest
-  ) throws JsonProcessingException {
+  ) {
     String email = principal.getName();
     try {
       String baseUrl = httpHostResolver.resolve(httpRequest);
+      var alias = logic.createNewAlias(email, request.url(), request.alias());
       var shortenedUrl = baseUrl + "/r/"
-          + logic.createNewAlias(email, request.url(), request.alias());
+          + alias;
+      logic.dataCreation().get(email);
       return HttpResponse.created(
-        json.toJson(new UrlShortenResponse(shortenedUrl)));
+          json.toJson(new UrlShortenResponse(shortenedUrl)));
     } catch (AliasAlreadyExist e) {
       return HttpResponse.serverError(
-        json.toJson(new ErrorResponse(1, "Alias is already taken"))
+          json.toJson(new ErrorResponse(1, "Alias is already taken"))
       );
     }
   }
